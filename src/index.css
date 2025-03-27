@@ -1,3 +1,22 @@
+@import "@fontsource/epilogue";
+@import "@fontsource/host-grotesk";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: "Epilogue", sans-serif;
+  }
+
+  .font-epilogue {
+    font-family: "Epilogue", sans-serif;
+    font-optical-sizing: auto;
+  }
+
+  .font-host-grotesk {
+    font-family: "Host Grotesk", sans-serif;
+    font-optical-sizing: auto;
+  }
+}
