@@ -1,71 +1,157 @@
 import React, { useContext, useState } from "react";
-import axios from "axios";
-import { UserDataContext } from "../context/UserContext";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { UserContext } from "../context/UserContext";
 
 const AuthForm = () => {
-  const ans = useContext(UserDataContext);
-  console.log(ans);
-  const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
+  const { setUser, setToken } = useContext(UserContext);
+
   const [isUser, setIsUser] = useState(true);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    vehicleColor: "",
-    vehicleNoPlate: "",
-    vehicleCapacity: "",
-    vehicleType: "",
-  });
+  const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [formData, setFormData] = useState({
+    fullname: {
+      firstname: "",
+      lastname: "",
+    },
+    email: "",
+    password: "",
+    vehicle: {
+      color: "",
+      plate: "",
+      capacity: "",
+      vehicleType: "",
+    },
+  });
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    if (name === "firstname" || name === "lastname") {
+      setFormData((prev) => ({
+        ...prev,
+        fullname: {
+          ...prev.fullname,
+          [name]: value,
+        },
+      }));
+    } else if (
+      name === "color" ||
+      name === "plate" ||
+      name === "capacity" ||
+      name === "vehicleType"
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        vehicle: {
+          ...prev.vehicle,
+          [name]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    const role = isUser ? "user" : "driver";
+    try {
+      const endpoint = isLogin ? "login" : "register";
+      const userType = isUser ? "user" : "captain";
+      const url = `${import.meta.env.VITE_BASE_URL}/${userType}/${endpoint}`;
 
-    const payload = isUser
-      ? {
+      let requestBody;
+      if (isLogin) {
+        requestBody = {
           email: formData.email,
           password: formData.password,
-          ...(isLogin
-            ? {}
-            : {
-                fullName: {
-                  firstName: formData.firstName,
-                  lastName: formData.lastName,
-                },
-              }),
-        }
-      : {
+        };
+      } else {
+        requestBody = {
+          fullname: formData.fullname,
           email: formData.email,
           password: formData.password,
-          ...(isLogin
-            ? {}
-            : {
-                fullName: {
-                  firstName: formData.firstName,
-                  lastName: formData.lastName,
-                },
-                vehicleColor: formData.vehicleColor,
-                vehicleNoPlate: formData.vehicleNoPlate,
-                vehicleCapacity: formData.vehicleCapacity,
-                vehicleType: formData.vehicleType,
-              }),
         };
 
-    console.log(role, "Form Data Submitted:", payload);
+        if (!isUser) {
+          requestBody.vehicle = formData.vehicle;
+        }
+      }
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      if (isLogin) {
+        setToken(data.token);
+
+        // Clean user data and add role
+        const userData = isUser
+          ? {
+              fullname: data.user.fullname || { firstname: "", lastname: "" },
+              email: data.user.email || "",
+              role: "user", // Explicitly set role for user
+            }
+          : {
+              fullname: data.captain.fullname || {
+                firstname: "",
+                lastname: "",
+              },
+              email: data.captain.email || "",
+              role: "captain",
+              vehicle: data.captain.vehicle || {
+                color: "",
+                plate: "",
+                capacity: "",
+                vehicleType: "",
+              },
+            };
+
+        setUser(userData); // Save cleaned user or captain data
+        console.log("User data saved:", userData);
+
+        setSuccess("Login successful! Redirecting...");
+        navigate("/home");
+      } else {
+        setSuccess("Registration successful! Please login.");
+        setIsLogin(true);
+        setFormData({
+          fullname: {
+            firstname: "",
+            lastname: "",
+          },
+          email: "",
+          password: "",
+          vehicle: {
+            color: "",
+            plate: "",
+            capacity: "",
+            vehicleType: "",
+          },
+        });
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setError(err.message || "An error occurred");
+    }
   };
 
   return (
@@ -103,18 +189,18 @@ const AuthForm = () => {
               <div className="flex space-x-4">
                 <input
                   type="text"
-                  name="firstName"
+                  name="firstname"
                   placeholder="First Name"
-                  value={formData.firstName}
+                  value={formData.fullname.firstname}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required={!isLogin}
                 />
                 <input
                   type="text"
-                  name="lastName"
+                  name="lastname"
                   placeholder="Last Name"
-                  value={formData.lastName}
+                  value={formData.fullname.lastname}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required={!isLogin}
@@ -148,18 +234,18 @@ const AuthForm = () => {
               <div className="flex space-x-4">
                 <input
                   type="text"
-                  name="vehicleColor"
+                  name="color"
                   placeholder="Vehicle Color"
-                  value={formData.vehicleColor}
+                  value={formData.vehicle.color}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
                 <input
                   type="text"
-                  name="vehicleNoPlate"
+                  name="plate"
                   placeholder="Vehicle No Plate"
-                  value={formData.vehicleNoPlate}
+                  value={formData.vehicle.plate}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
@@ -168,24 +254,24 @@ const AuthForm = () => {
               <div className="flex space-x-4">
                 <input
                   type="number"
-                  name="vehicleCapacity"
+                  name="capacity"
                   placeholder="Vehicle Capacity"
-                  value={formData.vehicleCapacity}
+                  value={formData.vehicle.capacity}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
                 <select
                   name="vehicleType"
-                  value={formData.vehicleType}
+                  value={formData.vehicle.vehicleType}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="">Select Vehicle Type</option>
-                  <option value="sedan">Sedan</option>
-                  <option value="suv">SUV</option>
-                  <option value="van">Van</option>
+                  <option value="">Vehicle Type</option>
+                  <option value="car">Car</option>
+                  <option value="motorcycle">Motorcycle</option>
+                  <option value="auto">Auto</option>
                 </select>
               </div>
             </div>

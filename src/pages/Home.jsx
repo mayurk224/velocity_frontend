@@ -1,79 +1,51 @@
-import React, { useState } from "react";
-import Navbar from "../components/Navbar";
-import authBG from "../assets/authBG.jpeg";
-import AuthForm from "../components/AuthForm";
+import React, { useContext } from "react";
+import LogoutBtn from "../components/LogoutBtn";
+import { UserContext } from "../context/UserContext";
 
 const Home = () => {
-  const [showMinus, setShowMinus] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { user } = useContext(UserContext); // Access user from UserContext
+
+  if (!user) {
+    return <div className="p-4">User details not available. Please log in.</div>;
+  }
+
   return (
-    <div
-      className="main h-screen w-full bg-cover bg-center relative"
-      style={{ backgroundImage: `url(${authBG})` }}
-    >
-      <Navbar />
-      <div className="mt-40 ml-10 absolute max-w-lg">
-        <h1 className="font-semibold text-5xl">
-          Fast & Reliable Transport Service
-        </h1>
-        <h3 className="text-2xl font-normal">
-          Seamless, safe, and affordable rides anytime, anywhere with
-          professional drivers.
-        </h3>
-      </div>
-
-      <div
-        className={`getStartedDiv absolute bottom-0 left-1/2 transform -translate-x-1/2 w-[500px] 
-    ${isExpanded ? "h-auto py-4 opacity-100" : "h-[80px] opacity-90"} 
-    overflow-hidden bg-white flex flex-col items-center justify-center 
-    rounded-t-3xl transition-all duration-500 ease-in-out 
-    shadow-lg transform origin-bottom bg-white/20 backdrop-blur-sm`}
-      >
-        {!isExpanded && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="bg-black mt-2 text-white px-4 py-2 rounded-md toggleDiv 
-        transition transform hover:scale-105 active:scale-95 
-        focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-50"
-          >
-            Get Started
-          </button>
-        )}
-
-        <button
-          className="toggleDiv mt-2 p-2 group"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {!isExpanded ? (
-            <div
-              className="minusDiv w-8 h-1 bg-white rounded-3xl 
-          transition-all duration-300 group-hover:w-10 group-hover:bg-gray-300"
-            ></div>
-          ) : (
-            <div
-              className="w-8 h-2  flex arrowDiv 
-          transition-all duration-300 transform"
-            >
-              <div
-                className="rounded-3xl bg-white h-1 w-5 rotate-[20deg] -mr-[2px] 
-            transition-all duration-300 group-hover:rotate-[25deg]"
-              ></div>
-              <div
-                className="rounded-3xl bg-white h-1 w-5 rotate-[-20deg] -ml-[2px] 
-            transition-all duration-300 group-hover:rotate-[-25deg]"
-              ></div>
-            </div>
-          )}
-        </button>
-
-        {isExpanded && (
-          <div
-            className="transition-all duration-500"
-          >
-            <AuthForm />
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">
+        Welcome to Home Page ({user.role || "Guest"})
+      </h1>
+      <div className="mb-4">
+        <p className="text-lg">
+          <strong>Role:</strong> {user.role}
+        </p>
+        <p className="text-lg">
+          <strong>Full Name:</strong>{" "}
+          {user.fullname?.firstname
+            ? `${user.fullname.firstname} ${user.fullname.lastname}`
+            : "N/A"}
+        </p>
+        <p className="text-lg">
+          <strong>Email:</strong> {user.email || "N/A"}
+        </p>
+        {user.role === "captain" && user.vehicle && (
+          <div className="mt-2">
+            <h2 className="text-xl font-semibold">Vehicle Details:</h2>
+            <p className="text-lg">
+              <strong>Color:</strong> {user.vehicle.color || "N/A"}
+            </p>
+            <p className="text-lg">
+              <strong>Plate:</strong> {user.vehicle.plate || "N/A"}
+            </p>
+            <p className="text-lg">
+              <strong>Capacity:</strong> {user.vehicle.capacity || "N/A"}
+            </p>
+            <p className="text-lg">
+              <strong>Type:</strong> {user.vehicle.vehicleType || "N/A"}
+            </p>
           </div>
         )}
       </div>
+      <LogoutBtn />
     </div>
   );
 };
